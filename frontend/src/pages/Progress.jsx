@@ -55,8 +55,6 @@ export default function Progress() {
   const [perf, setPerf] = useState(null)
   const [chartData, setChartData] = useState([])
   const [muscleScores, setMuscleScores] = useState({})
-  const [muscleConfidence, setMuscleConfidence] = useState({})
-  const [muscleTopExercises, setMuscleTopExercises] = useState({})
   const [isResetting, setIsResetting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -77,13 +75,10 @@ export default function Progress() {
         })
         setChartData(data)
 
-        const currentMuscleProfile = buildCurrentMuscleProfile(
+        setMuscleScores(buildCurrentMuscleProfile(
           w.data,
           parseFloat(u.data?.bodyweight) || 180
-        )
-        setMuscleScores(currentMuscleProfile.scores)
-        setMuscleConfidence(currentMuscleProfile.confidence)
-        setMuscleTopExercises(currentMuscleProfile.topExercises)
+        ))
       })
       .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false))
@@ -161,8 +156,6 @@ export default function Progress() {
       <div style={{ marginBottom: 24, position: 'relative' }}>
         <StrengthVisualizerSystem 
           scores={muscleScores}
-          confidence={muscleConfidence}
-          topExercises={muscleTopExercises}
         />
       </div>
 

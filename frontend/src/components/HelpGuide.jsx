@@ -19,7 +19,7 @@ export default function HelpGuide() {
 
         <section>
           <h3>Log a workout</h3>
-          <p>Enter an exercise, weight in pounds, reps, and sets. Type a custom exercise or select a muscle on the body map to browse exercises that train it. Add optional session notes, then save to see your points breakdown. Use the reps field for seconds on planks.</p>
+          <p>Enter an exercise, weight in pounds, reps, and sets. Type a custom exercise or select a muscle on the body map to browse exercises that train it. Add optional session notes, then save to see your points breakdown. Use the reps field for seconds on planks. For assisted dips and pull-ups, enter the weight of the assistance.</p>
         </section>
 
         <section>
@@ -47,7 +47,7 @@ export default function HelpGuide() {
         <section>
           <h3>Review progress</h3>
           <p>The Dashboard shows your balance, level, streak, and recent sessions. Deleting a session removes its earned points from your balance. Progress shows your volume trend, best weights, and a muscle map based on your recent lifts and signup bodyweight.</p>
-          <p><strong>Strength</strong> is an in-app estimate out of 100 for exercises the app recognizes. <strong>Confidence</strong> measures how much recent, relevant lifting data supports that estimate. Select a muscle on the map or its score card to open its exercise list.</p>
+          <p><strong>Strength</strong> is an in-app estimate out of 100 for exercises the app recognizes. Select a muscle on the map or its score card to open its exercise list.</p>
         </section>
       </dialog>
     </>

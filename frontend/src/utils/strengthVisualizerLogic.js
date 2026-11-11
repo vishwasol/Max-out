@@ -1,5 +1,7 @@
-import { EXERCISE_LIBRARY, MUSCLE_GROUPS } from './exerciseLibrary.js'
+import { EXERCISE_LIBRARY, LEGACY_EXERCISES, MUSCLE_GROUPS } from './exerciseLibrary.js'
 
+const SCORABLE_EXERCISES = { ...LEGACY_EXERCISES, ...EXERCISE_LIBRARY }
+const ASSISTED_EXERCISES = new Set(['Assisted Pull-ups', 'Assisted Dips'])
 const BODYWEIGHT_EXERCISES = new Set(['Pull-ups', 'Chin-ups', 'Push-ups', 'Dips', 'Bench Dips', 'Inverted Row'])
 
 // Ratios are in-app benchmarks, with higher targets for isolation lifts.
@@ -99,6 +101,52 @@ const EXERCISE_STANDARD_GROUPS = {
   'Bicycle Crunch': 'core',
   'Side Plank': 'core',
   'Mountain Climbers': 'core',
+  "Incline Barbell Bench Press": 'horizontalPress',
+  "Incline Smith Machine Press": 'horizontalPress',
+  "Smith Machine Bench Press": 'horizontalPress',
+  "Incline Chest Press Machine": 'horizontalPress',
+  "Assisted Dips": 'horizontalPress',
+  "Tricep Dip Machine": 'horizontalPress',
+  "Dumbbell Chest Fly": 'chestAccessory',
+  "Cable Chest Fly": 'chestAccessory',
+  "Assisted Pull-ups": 'verticalPull',
+  "Single Arm Lat Pulldown": 'verticalPull',
+  "Straight Arm Pulldown": 'verticalPull',
+  "Machine Row": 'horizontalPull',
+  "Face Pull": 'horizontalPull',
+  "Back Extension": 'hinge',
+  "Dumbbell Romanian Deadlift": 'hinge',
+  "Barbell Squat": 'squat',
+  "Goblet Squat": 'squat',
+  "Dumbbell Lunges": 'legAccessory',
+  "Seated Leg Curl": 'legAccessory',
+  "Lying Leg Curl": 'legAccessory',
+  "Hip Abduction Machine": 'legAccessory',
+  "Hip Adduction Machine": 'legAccessory',
+  "Cable Glute Kickback": 'legAccessory',
+  "Leg Press Calf Raise": 'legAccessory',
+  "Seated Dumbbell Shoulder Press": 'verticalPress',
+  "Machine Shoulder Press": 'verticalPress',
+  "Smith Machine Shoulder Press": 'verticalPress',
+  "Dumbbell Lateral Raise": 'shoulderIso',
+  "Machine Lateral Raise": 'shoulderIso',
+  "Dumbbell Front Raise": 'shoulderIso',
+  "Dumbbell Shrugs": 'shoulderIso',
+  "Barbell Shrugs": 'shoulderIso',
+  "Alternating Dumbbell Curl": 'armIso',
+  "Machine Preacher Curl": 'armIso',
+  "Straight Bar Tricep Pushdown": 'armIso',
+  "Dumbbell Overhead Tricep Extension": 'armIso',
+  "Tricep Kickback": 'armIso',
+  "Wrist Curl": 'armIso',
+  "Reverse Curl": 'armIso',
+  "Ab Crunch Machine": 'core',
+  "Hanging Knee Raise": 'core',
+  "Captain's Chair Leg Raise": 'core',
+  "Lying Leg Raise": 'core',
+  "Reverse Crunch": 'core',
+  "Dead Bug": 'core',
+  "Cable Woodchopper": 'core',
 }
 
 const SCORE_STOPS = [10, 25, 40, 55, 70, 85]
@@ -106,8 +154,6 @@ const PLANK_SECONDS_TARGETS = [20, 35, 55, 80, 110, 150]
 const MAX_STRENGTH_SCORE = 99.9
 
 export const calculate1RM = (weight, reps) => weight * (1 + Math.min(reps, 12) / 30)
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
 const interpolate = (input, inMin, inMax, outMin, outMax) => {
   const ratio = (input - inMin) / (inMax - inMin)
@@ -121,9 +167,11 @@ const getStrengthScore = (exerciseName, weight, reps, bodyweight) => {
   const isPlank = exerciseName === 'Plank' || exerciseName === 'Side Plank'
   const multiplier = group === 'armIso' ? ARM_TARGET_MULTIPLIER : STRENGTH_TARGET_MULTIPLIER
   const thresholds = isPlank ? PLANK_SECONDS_TARGETS : BASE_THRESHOLDS[group].map(value => value * multiplier)
-  const estimatedLoad = BODYWEIGHT_EXERCISES.has(exerciseName)
-    ? Math.max(weight, bodyweight)
-    : calculate1RM(weight, reps)
+  let estimatedLoad = calculate1RM(weight, reps)
+  if (BODYWEIGHT_EXERCISES.has(exerciseName)) estimatedLoad = Math.max(weight, bodyweight)
+  if (ASSISTED_EXERCISES.has(exerciseName)) {
+    estimatedLoad = calculate1RM(Math.max(0, bodyweight - weight), reps)
+  }
   const value = isPlank ? reps : estimatedLoad / bodyweight
 
   if (value <= thresholds[0]) {
@@ -196,8 +244,8 @@ export const buildCurrentMuscleProfile = (workouts, bodyweight) => {
     )
 
     workout.exercises.forEach(exercise => {
-      if (!Object.hasOwn(EXERCISE_LIBRARY, exercise.name)) return
-      const definition = EXERCISE_LIBRARY[exercise.name]
+      if (!Object.hasOwn(SCORABLE_EXERCISES, exercise.name)) return
+      const definition = SCORABLE_EXERCISES[exercise.name]
 
       const score = getStrengthScore(
         exercise.name,
@@ -213,20 +261,18 @@ export const buildCurrentMuscleProfile = (workouts, bodyweight) => {
       const existing = exerciseBestEntries.get(exercise.name)
       if (!existing || effectiveScore > existing.effectiveScore) {
         exerciseBestEntries.set(exercise.name, {
-          exerciseName: exercise.name,
           muscleDefinition: definition,
           score,
           effectiveScore,
           reliability,
           recencyWeight,
-          performedAt: workout.date,
         })
       }
     })
   })
 
   const muscleTotals = Object.fromEntries(
-    MUSCLE_GROUPS.map(muscle => [muscle, { score: 0, weight: 0, confidence: 0, exercises: [] }])
+    MUSCLE_GROUPS.map(muscle => [muscle, { score: 0, weight: 0 }])
   )
 
   exerciseBestEntries.forEach(entry => {
@@ -240,30 +286,14 @@ export const buildCurrentMuscleProfile = (workouts, bodyweight) => {
       const appliedWeight = qualityWeight * share
       total.score += entry.score * appliedWeight
       total.weight += appliedWeight
-      total.confidence += appliedWeight
-      total.exercises.push({
-        name: entry.exerciseName,
-        score: entry.score,
-        performedAt: entry.performedAt,
-        contribution: share,
-      })
     })
   })
 
-  const scores = {}
-  const confidence = {}
-  const topExercises = {}
-
-  MUSCLE_GROUPS.forEach(muscle => {
-    const total = muscleTotals[muscle]
-    scores[muscle] = total.weight > 0 ? total.score / total.weight : 0
-    confidence[muscle] = clamp(total.confidence / 1.6, 0, 1)
-    topExercises[muscle] = total.exercises
-      .sort((a, b) => (b.score * b.contribution) - (a.score * a.contribution))
-      .slice(0, 3)
-  })
-
-  return { scores, confidence, topExercises }
+  return Object.fromEntries(
+    Object.entries(muscleTotals).map(([muscle, total]) => [
+      muscle, total.weight > 0 ? total.score / total.weight : 0,
+    ])
+  )
 }
 
 export const classifyLevel = (score) => {

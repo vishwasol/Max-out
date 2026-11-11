@@ -3,19 +3,7 @@ import MuscleMap from './MuscleMap'
 import { MUSCLE_GROUPS } from '../utils/exerciseLibrary'
 import { classifyLevel, LEVEL_COLORS, LEGEND } from '../utils/strengthVisualizerLogic'
 
-const getConfidenceLabel = (value) => {
-  if (value >= 0.8) return 'High confidence'
-  if (value >= 0.5) return 'Medium confidence'
-  if (value > 0) return 'Low confidence'
-  return 'No data'
-}
-
-const formatExerciseList = (exercises) => {
-  if (!exercises?.length) return 'No logged lifts yet'
-  return exercises.map(exercise => exercise.name).join(' • ')
-}
-
-export default function StrengthVisualizerSystem({ scores = {}, confidence = {}, topExercises = {} }) {
+export default function StrengthVisualizerSystem({ scores = {} }) {
   const navigate = useNavigate()
   const exerciseLink = muscle => `/log?muscle=${muscle}`
 
@@ -38,37 +26,21 @@ export default function StrengthVisualizerSystem({ scores = {}, confidence = {},
       <MuscleMap scores={scores} onSelect={muscle => navigate(exerciseLink(muscle))} />
 
       <div className="muscle-score-grid">
-        {MUSCLE_GROUPS.map(muscle => (
-          <Link key={muscle} to={exerciseLink(muscle)} className="muscle-score-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 14px', borderRadius: 10, border: '1px solid rgba(139,92,246,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6, gap: 8 }}>
-              <div style={{ textTransform: 'uppercase', fontSize: '0.65rem', color: '#94a3b8', letterSpacing: '0.05em' }}>
-                {muscle}
+        {MUSCLE_GROUPS.map(muscle => {
+          const score = scores[muscle] || 0
+          const color = score ? LEVEL_COLORS[classifyLevel(score)] : '#94a3b8'
+          return (
+            <Link key={muscle} to={exerciseLink(muscle)} className="muscle-score-card">
+              <div className="muscle-score-card-heading">
+                <span>{muscle}</span>
+                <strong>{score ? `${score.toFixed(1)} / 100` : '—'}</strong>
               </div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: scores[muscle] ? LEVEL_COLORS[classifyLevel(scores[muscle])] : '#94a3b8' }}>
-                {scores[muscle] ? `${scores[muscle].toFixed(1)} / 100` : '—'}
+              <div className="muscle-score-track" aria-hidden="true">
+                <div style={{ width: `${score}%`, background: color }} />
               </div>
-            </div>
-            <div style={{ fontSize: '0.76rem', color: '#64748b', marginBottom: 8 }}>
-              {getConfidenceLabel(confidence[muscle] || 0)}{confidence[muscle] > 0 && ` · ${Math.round(confidence[muscle] * 100)}%`}
-            </div>
-            <div style={{ height: 6, borderRadius: 999, background: 'rgba(148,163,184,0.16)', overflow: 'hidden', marginBottom: 8 }}>
-              <div
-                style={{
-                  width: `${scores[muscle] || 0}%`,
-                  height: '100%',
-                  background: LEVEL_COLORS[classifyLevel(scores[muscle])] || LEVEL_COLORS[0],
-                }}
-              />
-            </div>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', lineHeight: 1.4 }}>
-              {formatExerciseList(topExercises[muscle])}
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      <div style={{ color: '#64748b', fontSize: '0.82rem', textAlign: 'center', marginBottom: 24 }}>
-        Strength is an in-app score. Confidence reflects how much recent, relevant training data supports it.
+            </Link>
+          )
+        })}
       </div>
 
       <div style={{

@@ -99,7 +99,6 @@ export default function LogWorkout() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const group = MUSCLE_GROUPS.find(muscle => muscle === searchParams.get('muscle'))
-  const [lastAdded, setLastAdded] = useState('')
   const [notes, setNotes] = useState('')
   const [exercises, setExercises] = useState(() => [newExercise()])
   const [loading, setLoading] = useState(false)
@@ -113,7 +112,6 @@ export default function LogWorkout() {
       if (emptyIndex === -1) return [...rows, newExercise(name)]
       return rows.map((row, i) => i === emptyIndex ? { ...row, name } : row)
     })
-    setLastAdded(name)
   }
   const removeExercise = idx => setExercises(ex => ex.filter((_, i) => i !== idx))
   const updateExercise = (idx, field, val) => setExercises(ex => ex.map((e, i) => i === idx ? { ...e, [field]: val } : e))
@@ -148,12 +146,8 @@ export default function LogWorkout() {
 
       <MuscleExercisePicker
         group={group}
-        onSelectGroup={muscle => {
-          setLastAdded('')
-          setSearchParams({ muscle }, { replace: true })
-        }}
+        onSelectGroup={muscle => setSearchParams({ muscle }, { replace: true })}
         onAdd={addFromLibrary}
-        lastAdded={lastAdded}
       />
 
       <datalist id="exercise-list">

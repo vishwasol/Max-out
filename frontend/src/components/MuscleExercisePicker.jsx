@@ -1,15 +1,28 @@
 import MuscleMap from './MuscleMap'
 import { EXERCISE_LIBRARY, MUSCLE_GROUPS } from '../utils/exerciseLibrary'
 
-const library = Object.entries(EXERCISE_LIBRARY).sort(([a], [b]) => a.localeCompare(b))
+// Put familiar gym staples first, then keep the supplied catalog order.
+const COMMON_EXERCISES = [
+  'Barbell Bench Press', 'Barbell Squat', 'Dumbbell Bench Press', 'Lat Pulldown',
+  'Leg Press', 'Overhead Press', 'Seated Cable Row', 'Dumbbell Curl', 'Pull-ups',
+  'Incline Dumbbell Press', 'Dumbbell Lateral Raise', 'Tricep Pushdown',
+  'Romanian Deadlift', 'Push-ups', 'Plank', 'Barbell Row', 'Deadlift',
+  'Seated Dumbbell Shoulder Press', 'Hammer Curl', 'Leg Extension',
+  'Cable Lateral Raise', 'Crunches', 'Cable Chest Fly', 'Seated Leg Curl',
+  'Rope Tricep Pushdown', 'Dips', 'Face Pull', 'Hanging Leg Raise',
+]
 
-export default function MuscleExercisePicker({ group, onSelectGroup, onAdd, lastAdded }) {
+const library = Object.entries(EXERCISE_LIBRARY)
+const commonRank = new Map(COMMON_EXERCISES.map((name, rank) => [name, rank]))
+library.sort(([a], [b]) => (commonRank.get(a) ?? COMMON_EXERCISES.length) - (commonRank.get(b) ?? COMMON_EXERCISES.length))
+
+export default function MuscleExercisePicker({ group, onSelectGroup, onAdd }) {
   const primary = library.filter(([, exercise]) => exercise.primary === group)
   const secondary = library.filter(([, exercise]) => exercise.secondary.includes(group))
 
   return (
     <details className="card exercise-picker" open={group ? true : undefined}>
-      <summary>Browse exercises by muscle</summary>
+      <summary aria-label="Browse exercises by muscle">Exercises</summary>
       <div className="exercise-picker-content">
         <div>
           <MuscleMap selected={group ?? null} onSelect={onSelectGroup} />
@@ -27,7 +40,7 @@ export default function MuscleExercisePicker({ group, onSelectGroup, onAdd, last
             <>
               <h2>{group} exercises</h2>
               <p>Choose an exercise to add it to this workout.</p>
-              <div className="exercise-picker-list">
+              <div key={group} className="exercise-picker-list">
                 {[['Main focus', primary], ['Also works this group', secondary]].map(([label, exercises]) =>
                   exercises.length > 0 && (
                     <div key={label}>
@@ -43,7 +56,6 @@ export default function MuscleExercisePicker({ group, onSelectGroup, onAdd, last
               </div>
             </>
           ) : <p>Choose a group on the map or use the buttons to see matching exercises.</p>}
-          <p className="exercise-picker-status" role="status">{lastAdded && `${lastAdded} added.`}</p>
         </div>
       </div>
     </details>
