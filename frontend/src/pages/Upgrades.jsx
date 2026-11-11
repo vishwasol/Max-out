@@ -35,7 +35,7 @@ const EFFECT_LABELS = {
   weekend_multiplier: 'Weekend Bonus',
 }
 
-function UpgradeCard({ upgrade, userPoints, onUnlock }) {
+function UpgradeCard({ upgrade, userPoints = 0, onUnlock }) {
   const canAfford = userPoints >= upgrade.cost
   const effectLabel = EFFECT_LABELS[upgrade.effect_type] ?? upgrade.effect_type
 
@@ -98,14 +98,16 @@ function UpgradeCard({ upgrade, userPoints, onUnlock }) {
           <span style={{ color: '#475569', fontSize: '0.8rem' }}>pts</span>
         </div>
 
-        <button
-          id={`unlock-btn-${upgrade.id}`}
-          className={canAfford ? 'btn-gold' : 'btn-ghost'}
-          onClick={() => onUnlock(upgrade)}
-          disabled={!canAfford}
-        >
-          {canAfford ? 'UNLOCK' : `Need ${upgrade.cost - userPoints} more pts`}
-        </button>
+        {onUnlock && (
+          <button
+            id={`unlock-btn-${upgrade.id}`}
+            className={canAfford ? 'btn-gold' : 'btn-ghost'}
+            onClick={() => onUnlock(upgrade)}
+            disabled={!canAfford}
+          >
+            {canAfford ? 'UNLOCK' : `Need ${upgrade.cost - userPoints} more pts`}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -215,7 +217,7 @@ export default function Upgrades() {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
             {ownedUpgrades.map(u => (
-              <UpgradeCard key={u.id} upgrade={u} userPoints={user?.total_points ?? 0} onUnlock={handleUnlock} />
+              <UpgradeCard key={u.id} upgrade={u} />
             ))}
           </div>
         </>
