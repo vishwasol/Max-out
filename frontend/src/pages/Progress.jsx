@@ -143,13 +143,12 @@ export default function Progress() {
       {/* Summary strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, marginBottom: 28 }}>
         {[
-          { label: 'Workouts', value: perf?.workouts_count ?? 0, icon: '🏋️' },
-          { label: 'Day Streak', value: `${perf?.streak ?? 0} days`, icon: '🔥' },
-          { label: 'Total Volume', value: `${Math.round((perf?.total_volume ?? 0) / 1000)}k lbs`, icon: '📦' },
-          { label: 'PRs Set', value: Object.keys(perf?.prs ?? {}).length, icon: '🏆' },
-        ].map(({ label, value, icon }) => (
-          <div key={label} className="card fade-up" style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: '1.3rem', marginBottom: 6 }}>{icon}</div>
+          { label: 'Workouts', value: perf?.workouts_count ?? 0 },
+          { label: 'Day Streak', value: `${perf?.streak ?? 0} days` },
+          { label: 'Total Volume', value: `${Math.round((perf?.total_volume ?? 0) / 1000)}k lbs` },
+          { label: 'PRs Set', value: Object.keys(perf?.prs ?? {}).length },
+        ].map(({ label, value }) => (
+          <div key={label} className="card fade-up" style={{ padding: '16px 20px', borderTop: '3px solid var(--purple)' }}>
             <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '1.3rem' }}>{value}</div>
             <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{label}</div>
           </div>

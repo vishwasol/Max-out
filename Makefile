@@ -1,5 +1,5 @@
 PYTHON ?= python3.11
-UVICORN = .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-access-log --log-level warning --no-proxy-headers
+UVICORN = .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-access-log --log-level warning --no-proxy-headers --no-server-header
 
 .PHONY: setup demo backend-setup backend-dev frontend-setup frontend-dev
 

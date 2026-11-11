@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from datetime import date, datetime, timedelta, timezone
 from .. import models
 
@@ -75,6 +75,7 @@ def get_previous_avg_volume(db: Session, user_id: int, exclude_workout_id: int, 
     """Average volume of the user's last N workouts (excluding the current one)."""
     past_workouts = (
         db.query(models.Workout)
+        .options(selectinload(models.Workout.exercises))
         .filter(
             models.Workout.user_id == user_id,
             models.Workout.id != exclude_workout_id,

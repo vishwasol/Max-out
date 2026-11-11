@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from datetime import datetime
-from .. import models
 from .performance_engine import detect_pr, calculate_volume, get_streak, get_previous_avg_volume
 from .upgrade_engine import apply_upgrades
 
@@ -15,18 +14,6 @@ def get_level(total_points: int) -> int:
         if total_points >= threshold:
             level = i + 1
     return min(level, len(LEVEL_THRESHOLDS))
-
-
-def points_to_next_level(total_points: int) -> dict:
-    """Return current threshold, next threshold, and progress percentage."""
-    level = get_level(total_points)
-    current_threshold = LEVEL_THRESHOLDS[level - 1]
-    if level >= len(LEVEL_THRESHOLDS):
-        return {"current": current_threshold, "next": current_threshold, "progress": 100.0}
-    next_threshold = LEVEL_THRESHOLDS[level]
-    span = next_threshold - current_threshold
-    progress = ((total_points - current_threshold) / span) * 100 if span else 100.0
-    return {"current": current_threshold, "next": next_threshold, "progress": round(progress, 1)}
 
 
 # ─── Core Calculation ─────────────────────────────────────────────────────────

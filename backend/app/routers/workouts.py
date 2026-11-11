@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import Annotated, List
 from .. import models, schemas
 from ..database import get_db
@@ -69,6 +69,7 @@ def get_workouts(
     """Fetch the most recent workouts for a user."""
     return (
         db.query(models.Workout)
+        .options(selectinload(models.Workout.exercises))
         .filter(models.Workout.user_id == current_user.id)
         .order_by(models.Workout.date.desc())
         .limit(limit)

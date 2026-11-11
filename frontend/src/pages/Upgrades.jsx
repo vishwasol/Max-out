@@ -40,7 +40,7 @@ function UpgradeCard({ upgrade, userPoints = 0, onUnlock }) {
   const effectLabel = EFFECT_LABELS[upgrade.effect_type] ?? upgrade.effect_type
 
   return (
-    <div className={`card fade-up ${upgrade.owned ? 'glow-green' : ''}`} style={{
+    <div className="card fade-up" style={{
       padding: '24px', display: 'flex', flexDirection: 'column', gap: 14,
       border: upgrade.count > 0
         ? '1px solid rgba(16,185,129,0.4)'
@@ -193,13 +193,6 @@ export default function Upgrades() {
         )}
       </div>
 
-      {/* Shop Section */}
-      <h2 style={{
-        fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '1rem',
-        color: '#94a3b8', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.08em'
-      }}>
-        Upgrade Shop
-      </h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16, marginBottom: 40 }}>
         {upgrades.map(u => (
           <UpgradeCard key={u.id} upgrade={u} userPoints={user?.total_points ?? 0} onUnlock={handleUnlock} />

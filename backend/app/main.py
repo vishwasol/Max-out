@@ -14,11 +14,10 @@ from .database import Base, SessionLocal, engine, run_migrations
 from .routers import auth, performance, upgrades, users, workouts
 from .security import RequestProtection
 
+
 def seed_data():
     """Seed the initial upgrade catalog on first start."""
-    db = SessionLocal()
-    try:
-        # Upgrade catalog
+    with SessionLocal() as db:
         if db.query(models.Upgrade).count() == 0:
             catalog = [
                 models.Upgrade(
@@ -52,9 +51,6 @@ def seed_data():
             ]
             db.add_all(catalog)
             db.commit()
-    finally:
-        db.close()
-
 
 
 @asynccontextmanager
@@ -76,10 +72,14 @@ app = FastAPI(
 )
 app.state.local_http = os.getenv("MAXOUT_LOCAL_HTTP") == "1"
 allowed_hosts = [host.strip() for host in os.getenv("MAXOUT_HOSTS", "").split(",") if host.strip()]
+routers = (auth.router, workouts.router, performance.router, upgrades.router, users.router)
+api_segments = {"api"}
+if not demo:
+    api_segments.update(router.prefix.lstrip("/") for router in routers)
+app.add_middleware(RequestProtection, demo=demo, api_segments=api_segments)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=[*LOCAL_HOSTS, *allowed_hosts])
-app.add_middleware(RequestProtection, demo=demo)
 
-for router in (auth.router, workouts.router, performance.router, upgrades.router, users.router):
+for router in routers:
     app.include_router(router, prefix="/api")
     if not demo:
         app.include_router(router, include_in_schema=False)

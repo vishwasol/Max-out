@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session, selectinload
 from .. import models, schemas
 from ..database import get_db
 from ..auth import get_current_user
@@ -15,6 +15,7 @@ def get_performance(current_user: models.User = Depends(get_current_user), db: S
 
     workouts = (
         db.query(models.Workout)
+        .options(selectinload(models.Workout.exercises))
         .filter(models.Workout.user_id == user_id)
         .all()
     )
