@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { signupUser, loginUser } from '../api'
+import { signupUser } from '../api'
 
 export default function Signup({ setAuth }) {
   const navigate = useNavigate()
@@ -16,20 +16,12 @@ export default function Signup({ setAuth }) {
     setLoading(true)
 
     try {
-      // 1. Register User
       await signupUser({
         username,
         password,
-        bodyweight: parseFloat(bodyweight) || 180.0
+        bodyweight: Number(bodyweight)
       })
 
-      // 2. Auto-login token fetch via OAuth2 form data
-      const formData = new URLSearchParams()
-      formData.append('username', username)
-      formData.append('password', password)
-      
-      const res = await loginUser(formData)
-      localStorage.setItem('maxout_token', res.data.access_token)
       setAuth(true)
       navigate('/')
     } catch (err) {
@@ -47,9 +39,13 @@ export default function Signup({ setAuth }) {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>USERNAME</label>
-            <input 
-              type="text" 
+            <label htmlFor="signup-username" style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>USERNAME</label>
+            <input
+              id="signup-username"
+              type="text"
+              autoComplete="username"
+              maxLength={64}
+              pattern="[^\s]+"
               className="input" 
               required
               value={username} 
@@ -57,9 +53,14 @@ export default function Signup({ setAuth }) {
             />
           </div>
           <div>
-            <label style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>PASSWORD</label>
-            <input 
-              type="password" 
+            <label htmlFor="signup-password" style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>PASSWORD</label>
+            <input
+              id="signup-password"
+              type="password"
+              autoComplete="new-password"
+              minLength={12}
+              maxLength={256}
+              placeholder="At least 12 characters"
               className="input" 
               required
               value={password} 
@@ -67,10 +68,13 @@ export default function Signup({ setAuth }) {
             />
           </div>
           <div>
-            <label style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>BODYWEIGHT (lbs)</label>
-            <input 
+            <label htmlFor="signup-bodyweight" style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>BODYWEIGHT (lbs)</label>
+            <input
+              id="signup-bodyweight"
               type="number" 
               step="0.5"
+              min="0.5"
+              max="2000"
               className="input" 
               required
               value={bodyweight} 

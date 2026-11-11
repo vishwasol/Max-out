@@ -67,3 +67,11 @@ class UserUpgrade(Base):
 
     user = relationship("User", back_populates="user_upgrades")
     upgrade = relationship("Upgrade", back_populates="user_upgrades")
+
+
+class AccountSession(Base):
+    __tablename__ = "account_sessions"
+
+    token_digest = Column(String(64), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    expires_at = Column(Integer, nullable=False, index=True)

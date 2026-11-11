@@ -10,18 +10,9 @@ const links = [
 
 export default function Navbar({ onLogout }) {
   return (
-    <aside style={{
-      width: 280,
-      height: '100vh',
-      background: 'rgba(8,8,15,1)',
-      borderRight: '1px solid rgba(139,92,246,0.12)',
-      position: 'sticky', top: 0,
-      display: 'flex', flexDirection: 'column',
-      padding: '32px 20px',
-      flexShrink: 0,
-    }}>
+    <aside className="app-nav">
       {/* Sidebar Header: Logo */}
-      <div style={{ marginBottom: 48, textAlign: 'center' }}>
+      <div className="app-nav-brand">
         <div>
           <img
             src={logo}
@@ -32,14 +23,13 @@ export default function Navbar({ onLogout }) {
       </div>
 
       {/* Navigation Links */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+      <nav className="app-nav-links" aria-label="Main navigation">
         {links.map(({ to, label }) => {
-          const icon = to === '/' ? '' : to === '/log' ? '' : to === '/progress' ? '' : ''
           return (
-            <NavLink key={to} to={to} end={to === '/'}
+            <NavLink key={to} to={to} end={to === '/'} className="app-nav-link"
               style={({ isActive }) => ({
                 display: 'flex', alignItems: 'center', gap: 12,
-                padding: '12px 16px', borderRadius: 12,
+                borderRadius: 12,
                 fontSize: '0.925rem', fontWeight: 600,
                 textDecoration: 'none',
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -48,21 +38,20 @@ export default function Navbar({ onLogout }) {
                 border: isActive ? '1px solid rgba(139,92,246,0.3)' : '1px solid transparent',
                 boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
               })}>
-              <span style={{ fontSize: '1.2rem', opacity: 0.9 }}>{icon}</span>
               <span>{label}</span>
             </NavLink>
           )
         })}
-      </div>
+      </nav>
 
       {/* Sidebar Footer: Logout */}
       {onLogout && (
-        <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <button onClick={onLogout} style={{
+        <div className="app-nav-account">
+          <button className="app-nav-link" onClick={onLogout} style={{
             width: '100%',
             display: 'flex', alignItems: 'center', gap: 12,
             background: 'transparent', border: 'none', cursor: 'pointer',
-            padding: '12px 16px', borderRadius: 12,
+            borderRadius: 12,
             color: '#ef4444', fontSize: '0.925rem', fontWeight: 600,
             transition: 'background 0.2s',
           }}

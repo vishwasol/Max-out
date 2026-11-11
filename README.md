@@ -1,70 +1,49 @@
 # Max-out
 
-Max-out is a React + FastAPI lifting tracker. The simplest local setup uses:
+Max-out is a React and FastAPI lifting tracker. The local demo uses a SQLite
+database at `backend/maxout.db` and starts with no accounts on a fresh checkout.
 
-- Frontend: Vite on `http://127.0.0.1:5173`
-- Backend: FastAPI on `http://127.0.0.1:8001`
-- Database: local SQLite file at `backend/maxout.db`
+## Run the local demo
 
-This is the recommended setup for running the project on another developer's computer.
-
-## Requirements
-
-- Node.js 20+
-- Python 3.11
-
-## Local Setup
-
-If you prefer, you can use the included `Makefile`:
+Use Python 3.11 and Node.js 22.12 or newer.
 
 ```bash
-make backend-setup
-make frontend-setup
-make backend-dev
-make frontend-dev
+make setup   # First run, or after dependencies change
+make demo
 ```
 
-Or run the commands manually below.
+Open [http://127.0.0.1:8001](http://127.0.0.1:8001) and sign up for a new account.
+One process serves the compiled frontend and the API. Press Ctrl+C to stop it.
+The database persists between runs. Uvicorn does not write a log file or print
+request access logs. Warnings and errors still appear in the terminal.
 
-### 1. Backend
+To start over, stop the server and remove the local `backend/maxout.db` file.
+This deletes all local accounts and their data. The next startup recreates the
+empty database and loads the upgrade catalog.
 
-```bash
-cd backend
-cp .env.example .env
-python3.11 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
-```
+## Develop with Vite
 
-The backend automatically loads `backend/.env`. By default it uses SQLite:
+For frontend hot reload, run `make backend-dev` and `make frontend-dev` in
+separate terminals and open [http://127.0.0.1:5173](http://127.0.0.1:5173).
+Vite forwards `/api` requests to FastAPI. If you have an older
+`frontend/.env.local`, remove its direct backend URL or set `VITE_API_URL=/api`.
+The standalone API docs are at [http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs).
 
-```env
-DATABASE_URL=sqlite:///./maxout.db
-```
+The backend loads `backend/.env` if present. Set `DATABASE_URL` there only if
+you want to override the default database.
 
-### 2. Frontend
+## Optional Docker setup
 
-In a second terminal:
+Set a strong, URL-safe `POSTGRES_PASSWORD` in the project root's ignored
+`.env` file and run `docker compose up --build`. Open
+[http://127.0.0.1:5173](http://127.0.0.1:5173). Docker uses its own Postgres
+volume. An existing Postgres volume retains its original roles and credentials.
 
-```bash
-cd frontend
-cp .env.example .env.local
-npm install
-npm run dev -- --host 127.0.0.1 --port 5173
-```
+## Hosting
 
-The frontend env points to the local backend:
-
-```env
-VITE_API_URL=http://127.0.0.1:8001
-```
-
-## Why This Setup Is Portable
-
-- The backend now reads `.env` automatically, so developers do not need to export `DATABASE_URL` manually.
-- The default database is a local SQLite file, so no Docker or Postgres is required for basic development.
-- The required backend auth dependencies are pinned in `requirements.txt`, including a `bcrypt` version compatible with `passlib`.
-
-## Optional Docker Setup
-
-`docker-compose.yml` is still available for a Postgres-based environment, but it is separate from the recommended local SQLite setup above.
+`make demo` is configured for HTTP on loopback. For deployment, serve the
+frontend and API on the same HTTPS origin, set `MAXOUT_HOSTS` to the deployment
+hostname and leave `MAXOUT_LOCAL_HTTP` unset so session cookies require HTTPS.
+If using a reverse proxy, preserve the public Host and trust forwarded headers
+only from that proxy. Use a shared rate limiter at the proxy or gateway when
+running multiple API workers. The application's auth throttle is per process.

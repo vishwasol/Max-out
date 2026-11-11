@@ -3,36 +3,42 @@ services:
     image: postgres:15
     restart: unless-stopped
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
+      POSTGRES_USER: maxout
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the project .env}
       POSTGRES_DB: maxout
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maxout -d maxout"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   backend:
     build: ./backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://user:pass@db:5432/maxout
+      DATABASE_URL: postgresql://maxout:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the project .env}@db:5432/maxout
+      MAXOUT_LOCAL_HTTP: "1"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
-    image: node:20-slim
+    image: node:22-slim
     working_dir: /app
     volumes:
       - ./frontend:/app
+      - frontend_modules:/app/node_modules
     ports:
-      - "5173:5173"
-    command: sh -c "npm install && npm run dev -- --host"
+      - "127.0.0.1:5173:5173"
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort"
     environment:
-      VITE_API_URL: http://localhost:8000
+      VITE_API_URL: /api
+      MAXOUT_PROXY_TARGET: http://backend:8000
     depends_on:
       - backend
 
 volumes:
   pgdata:
+  frontend_modules:

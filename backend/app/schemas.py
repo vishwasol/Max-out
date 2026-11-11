@@ -1,30 +1,33 @@
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated, List, Optional, Dict, Any
 from datetime import datetime
 
 
 # ─── Exercise ────────────────────────────────────────────────────────────────
 
 class ExerciseCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    weight: float = Field(ge=0, le=5000, allow_inf_nan=False)
+    reps: int = Field(ge=1, le=1000)
+    sets: int = Field(ge=1, le=1000)
+
+
+class ExerciseOut(BaseModel):
     name: str
     weight: float
     reps: int
     sets: int
-
-
-class ExerciseOut(ExerciseCreate):
     id: int
     workout_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ─── Workout ─────────────────────────────────────────────────────────────────
 
 class WorkoutCreate(BaseModel):
-    notes: Optional[str] = None
-    exercises: List[ExerciseCreate]
+    notes: Optional[str] = Field(default=None, max_length=4000)
+    exercises: List[ExerciseCreate] = Field(min_length=1, max_length=50)
 
 
 class WorkoutOut(BaseModel):
@@ -35,8 +38,7 @@ class WorkoutOut(BaseModel):
     exercises: List[ExerciseOut]
     points_earned: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WorkoutResult(BaseModel):
@@ -71,8 +73,7 @@ class UpgradeOut(BaseModel):
     cost: int
     count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UnlockRequest(BaseModel):
@@ -86,20 +87,23 @@ class UnlockResult(BaseModel):
 
 
 # ─── Auth / User ──────────────────────────────────────────────────────────────
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+Bodyweight = Annotated[float, Field(gt=0, le=2000, allow_inf_nan=False)]
 
-class TokenData(BaseModel):
-    username: str = None
 
-class UserCreate(BaseModel):
-    username: str
-    password: str
-    bodyweight: float
+class Credentials(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class UserCreate(Credentials):
+    username: str = Field(min_length=1, max_length=64, pattern=r"^[^\s]+$")
+    password: str = Field(min_length=12, max_length=256)
+    bodyweight: Bodyweight
+
 
 class UserBodyweightUpdate(BaseModel):
-    bodyweight: float
+    bodyweight: Bodyweight
+
 
 class UserOut(BaseModel):
     id: int
@@ -108,5 +112,4 @@ class UserOut(BaseModel):
     level: int
     bodyweight: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

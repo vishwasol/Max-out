@@ -1,3 +1,5 @@
+export const MUSCLE_GROUPS = ['chest', 'shoulders', 'arms', 'core', 'legs', 'back']
+
 export const EXERCISE_LIBRARY = {
   // CHEST
   "Barbell Bench Press": { primary: "chest", secondary: ["shoulders", "arms"], type: "compound" },

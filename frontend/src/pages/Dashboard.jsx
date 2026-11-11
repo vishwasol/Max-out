@@ -73,16 +73,17 @@ export default function Dashboard() {
   const [workouts, setWorkouts] = useState([])
   const [perf, setPerf] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const fetchAll = () => {
-    setLoading(true)
     Promise.all([getUser(), getWorkouts(), getPerformance()])
       .then(([u, w, p]) => {
+        setLoadFailed(false)
         setUser(u.data)
         setWorkouts(w.data)
         setPerf(p.data)
       })
-      .catch(console.error)
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false))
   }
 
@@ -95,9 +96,9 @@ export default function Dashboard() {
     
     try {
       await deleteWorkout(id)
-      fetchAll() // Refresh all stats
-    } catch (err) {
-      console.error(err)
+      setLoading(true)
+      fetchAll()
+    } catch {
       alert('Failed to delete workout.')
     }
   }
@@ -108,6 +109,8 @@ export default function Dashboard() {
       <span style={{ color: '#94a3b8' }}>Loading your stats…</span>
     </div>
   )
+
+  if (loadFailed) return <p role="alert">Could not load your dashboard.</p>
 
   const prCount = perf ? Object.keys(perf.prs).length : 0
 

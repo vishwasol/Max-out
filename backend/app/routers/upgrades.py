@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from .. import models, schemas
 from ..database import get_db
-from ..auth import get_current_user
+from ..auth import get_current_user, get_user_for_write
 
 router = APIRouter(prefix="/upgrades", tags=["upgrades"])
 
@@ -42,7 +42,7 @@ def get_upgrades(current_user: models.User = Depends(get_current_user), db: Sess
 @router.post("/unlock", response_model=schemas.UnlockResult)
 def unlock_upgrade(
     req: schemas.UnlockRequest, 
-    current_user: models.User = Depends(get_current_user), 
+    current_user: models.User = Depends(get_user_for_write),
     db: Session = Depends(get_db)
 ):
     """Spend points to unlock an upgrade."""

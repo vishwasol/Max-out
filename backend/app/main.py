@@ -1,45 +1,21 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, SessionLocal, Base, run_migrations
+from contextlib import asynccontextmanager
+import os
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.staticfiles import StaticFiles
+
 from . import models
-from .routers import workouts, performance, upgrades, users, auth
+from .auth import LOCAL_HOSTS
+from .database import Base, SessionLocal, engine, run_migrations
+from .routers import auth, performance, upgrades, users, workouts
+from .security import RequestProtection
 
-# ── Create all tables ──────────────────────────────────────────────────────────
-Base.metadata.create_all(bind=engine)
-run_migrations()
-
-app = FastAPI(
-    title="Max-out API",
-    description="Gamified lifting tracker — performance-based rewards engine",
-    version="1.0.0",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ── Mount routers ─────────────────────────────────────────────────────────────
-app.include_router(auth.router)
-app.include_router(workouts.router)
-app.include_router(performance.router)
-app.include_router(upgrades.router)
-app.include_router(users.router)
-
-
-@app.on_event("startup")
 def seed_data():
-    """Seed a default user and the initial upgrade catalog on first start."""
+    """Seed the initial upgrade catalog on first start."""
     db = SessionLocal()
     try:
         # Upgrade catalog
@@ -80,6 +56,57 @@ def seed_data():
         db.close()
 
 
-@app.get("/")
-def root():
-    return {"message": "Max-out API running 🏋️", "docs": "/docs"}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    run_migrations()
+    seed_data()
+    yield
+
+
+demo = os.getenv("MAXOUT_DEMO") == "1"
+app = FastAPI(
+    title="Max-out API",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url=None if demo else "/docs",
+    redoc_url=None if demo else "/redoc",
+    openapi_url=None if demo else "/openapi.json",
+)
+app.state.local_http = os.getenv("MAXOUT_LOCAL_HTTP") == "1"
+allowed_hosts = [host.strip() for host in os.getenv("MAXOUT_HOSTS", "").split(",") if host.strip()]
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=[*LOCAL_HOSTS, *allowed_hosts])
+app.add_middleware(RequestProtection, demo=demo)
+
+for router in (auth.router, workouts.router, performance.router, upgrades.router, users.router):
+    app.include_router(router, prefix="/api")
+    if not demo:
+        app.include_router(router, include_in_schema=False)
+
+
+@app.exception_handler(RequestValidationError)
+async def invalid_input(request: Request, exc: RequestValidationError):
+    return JSONResponse({"detail": "Invalid input. Check the form fields and try again."}, status_code=422)
+
+
+if demo:
+    dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+    app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+
+    @app.get("/")
+    @app.get("/login")
+    @app.get("/signup")
+    @app.get("/log")
+    @app.get("/progress")
+    @app.get("/upgrades")
+    def frontend():
+        return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
+
+    @app.get("/favicon.svg")
+    def favicon():
+        return FileResponse(dist / "favicon.svg")
+else:
+    @app.get("/")
+    def root():
+        return {"message": "Max-out API running 🏋️", "docs": "/docs"}

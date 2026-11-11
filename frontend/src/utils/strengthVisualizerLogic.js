@@ -1,8 +1,10 @@
-import { EXERCISE_LIBRARY } from './exerciseLibrary'
+import { EXERCISE_LIBRARY, MUSCLE_GROUPS } from './exerciseLibrary.js'
 
-const MUSCLE_GROUPS = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core']
-const BODYWEIGHT_EXERCISES = new Set(['Pull-ups', 'Chin-ups', 'Push-ups', 'Dips', 'Plank'])
+const BODYWEIGHT_EXERCISES = new Set(['Pull-ups', 'Chin-ups', 'Push-ups', 'Dips', 'Bench Dips', 'Inverted Row'])
 
+// Ratios are in-app benchmarks, with higher targets for isolation lifts.
+const STRENGTH_TARGET_MULTIPLIER = 1.2
+const ARM_TARGET_MULTIPLIER = 1.35
 const BASE_THRESHOLDS = {
   squat:           [0.45, 0.75, 1.0, 1.35, 1.7, 2.1],
   hinge:           [0.55, 0.9, 1.2, 1.6, 2.0, 2.45],
@@ -63,61 +65,80 @@ const EXERCISE_STANDARD_GROUPS = {
   'Russian Twists': 'core',
   'Cable Crunch': 'core',
   'Ab Wheel Rollout': 'core',
+  'Incline Dumbbell Press': 'horizontalPress',
+  'Decline Bench Press': 'horizontalPress',
+  'Machine Chest Press': 'horizontalPress',
+  'Pec Deck': 'chestAccessory',
+  'Wide Grip Lat Pulldown': 'verticalPull',
+  'Close Grip Lat Pulldown': 'verticalPull',
+  'Single Arm Dumbbell Row': 'horizontalPull',
+  'Chest Supported Row': 'horizontalPull',
+  'Inverted Row': 'horizontalPull',
+  'Hack Squat': 'squat',
+  'Smith Machine Squat': 'squat',
+  'Glute Bridge': 'legAccessory',
+  'Hip Thrust': 'legAccessory',
+  'Walking Lunges': 'legAccessory',
+  'Seated Calf Raise': 'legAccessory',
+  'Standing Calf Raise': 'legAccessory',
+  'Seated Dumbbell Press': 'verticalPress',
+  'Cable Lateral Raise': 'shoulderIso',
+  'Reverse Pec Deck': 'shoulderIso',
+  'Cable Front Raise': 'shoulderIso',
+  'Incline Dumbbell Curl': 'armIso',
+  'Rope Hammer Curl': 'armIso',
+  'Cable Curl': 'armIso',
+  'EZ Bar Curl': 'armIso',
+  'Concentration Curl': 'armIso',
+  'Close Grip Bench Press': 'horizontalPress',
+  'Rope Tricep Pushdown': 'armIso',
+  'Cable Overhead Tricep Extension': 'armIso',
+  'Bench Dips': 'horizontalPress',
+  'Decline Sit-ups': 'core',
+  'Toe Touches': 'core',
+  'Bicycle Crunch': 'core',
+  'Side Plank': 'core',
+  'Mountain Climbers': 'core',
 }
 
-const PERCENTILE_STOPS = [10, 25, 40, 55, 70, 85, 97]
+const SCORE_STOPS = [10, 25, 40, 55, 70, 85]
+const PLANK_SECONDS_TARGETS = [20, 35, 55, 80, 110, 150]
+const MAX_STRENGTH_SCORE = 99.9
 
-export const calculate1RM = (weight, reps) => weight * (1 + reps / 30)
+export const calculate1RM = (weight, reps) => weight * (1 + Math.min(reps, 12) / 30)
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
 const interpolate = (input, inMin, inMax, outMin, outMax) => {
-  if (inMax === inMin) return outMax
   const ratio = (input - inMin) / (inMax - inMin)
   return outMin + ratio * (outMax - outMin)
 }
 
-const getStandardThresholds = (exerciseName) => {
+const getStrengthScore = (exerciseName, weight, reps, bodyweight) => {
   const group = EXERCISE_STANDARD_GROUPS[exerciseName]
-  return group ? BASE_THRESHOLDS[group] : BASE_THRESHOLDS.armIso
-}
+  if (!group) return null
 
-const getEstimatedLoad = (exerciseName, weight, reps, bodyweight) => {
-  if (BODYWEIGHT_EXERCISES.has(exerciseName)) {
-    if (exerciseName === 'Plank') {
-      return bodyweight * (1 + Math.min(reps, 120) / 60)
-    }
-    return Math.max(weight, bodyweight)
-  }
+  const isPlank = exerciseName === 'Plank' || exerciseName === 'Side Plank'
+  const multiplier = group === 'armIso' ? ARM_TARGET_MULTIPLIER : STRENGTH_TARGET_MULTIPLIER
+  const thresholds = isPlank ? PLANK_SECONDS_TARGETS : BASE_THRESHOLDS[group].map(value => value * multiplier)
+  const estimatedLoad = BODYWEIGHT_EXERCISES.has(exerciseName)
+    ? Math.max(weight, bodyweight)
+    : calculate1RM(weight, reps)
+  const value = isPlank ? reps : estimatedLoad / bodyweight
 
-  return calculate1RM(weight, reps)
-}
-
-const getStrengthPercentile = (exerciseName, weight, reps, bodyweight) => {
-  const normalized = getEstimatedLoad(exerciseName, weight, reps, bodyweight) / bodyweight
-  const thresholds = getStandardThresholds(exerciseName)
-
-  if (normalized <= thresholds[0]) {
-    return clamp(interpolate(normalized, 0, thresholds[0], 1, PERCENTILE_STOPS[0]), 1, 99)
+  if (value <= thresholds[0]) {
+    return interpolate(Math.max(value, 0), 0, thresholds[0], 1, SCORE_STOPS[0])
   }
 
   for (let i = 1; i < thresholds.length; i += 1) {
-    if (normalized <= thresholds[i]) {
-      return interpolate(
-        normalized,
-        thresholds[i - 1],
-        thresholds[i],
-        PERCENTILE_STOPS[i - 1],
-        PERCENTILE_STOPS[i]
-      )
+    if (value <= thresholds[i]) {
+      return interpolate(value, thresholds[i - 1], thresholds[i], SCORE_STOPS[i - 1], SCORE_STOPS[i])
     }
   }
 
-  return clamp(
-    interpolate(normalized, thresholds[thresholds.length - 1], thresholds[thresholds.length - 1] * 1.25, 97, 99.5),
-    97,
-    99.5
-  )
+  // Keep the curve continuous at 85 and leave room above the top benchmark.
+  const excess = value / thresholds.at(-1) - 1
+  return Math.min(MAX_STRENGTH_SCORE, 100 - 15 / (1 + 2 * excess))
 }
 
 const getExerciseReliability = (exerciseName, exerciseType) => {
@@ -175,25 +196,26 @@ export const buildCurrentMuscleProfile = (workouts, bodyweight) => {
     )
 
     workout.exercises.forEach(exercise => {
+      if (!Object.hasOwn(EXERCISE_LIBRARY, exercise.name)) return
       const definition = EXERCISE_LIBRARY[exercise.name]
-      if (!definition) return
 
-      const percentile = getStrengthPercentile(
+      const score = getStrengthScore(
         exercise.name,
         exercise.weight,
         exercise.reps,
         safeBodyweight
       )
+      if (score === null) return
       const reliability = getExerciseReliability(exercise.name, definition.type)
       const recencyWeight = getRecencyWeight(daysSinceLog)
-      const effectiveScore = percentile * reliability * recencyWeight
+      const effectiveScore = score * reliability * recencyWeight
 
       const existing = exerciseBestEntries.get(exercise.name)
       if (!existing || effectiveScore > existing.effectiveScore) {
         exerciseBestEntries.set(exercise.name, {
           exerciseName: exercise.name,
           muscleDefinition: definition,
-          percentile,
+          score,
           effectiveScore,
           reliability,
           recencyWeight,
@@ -216,12 +238,12 @@ export const buildCurrentMuscleProfile = (workouts, bodyweight) => {
       if (!total) return
 
       const appliedWeight = qualityWeight * share
-      total.score += entry.percentile * appliedWeight
+      total.score += entry.score * appliedWeight
       total.weight += appliedWeight
       total.confidence += appliedWeight
       total.exercises.push({
         name: entry.exerciseName,
-        percentile: entry.percentile,
+        score: entry.score,
         performedAt: entry.performedAt,
         contribution: share,
       })
@@ -237,7 +259,7 @@ export const buildCurrentMuscleProfile = (workouts, bodyweight) => {
     scores[muscle] = total.weight > 0 ? total.score / total.weight : 0
     confidence[muscle] = clamp(total.confidence / 1.6, 0, 1)
     topExercises[muscle] = total.exercises
-      .sort((a, b) => (b.percentile * b.contribution) - (a.percentile * a.contribution))
+      .sort((a, b) => (b.score * b.contribution) - (a.score * a.contribution))
       .slice(0, 3)
   })
 
@@ -245,12 +267,12 @@ export const buildCurrentMuscleProfile = (workouts, bodyweight) => {
 }
 
 export const classifyLevel = (score) => {
-  if (score <= 0) return 0
+  if (!Number.isFinite(score) || score <= 0) return 0
   if (score < 20) return 1
   if (score < 35) return 2
   if (score < 50) return 3
-  if (score < 65) return 4
-  if (score < 80) return 5
+  if (score < 72) return 4
+  if (score < 90) return 5
   return 6
 }
 

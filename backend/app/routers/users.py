@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..database import get_db
-from ..engines.points_engine import get_level, points_to_next_level
 
-from ..auth import get_current_user
+from ..auth import get_current_user, get_user_for_write
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -18,7 +17,7 @@ def get_user(current_user: models.User = Depends(get_current_user), db: Session 
 @router.put("/me/bodyweight", response_model=schemas.UserOut)
 def update_bodyweight(
     req: schemas.UserBodyweightUpdate, 
-    current_user: models.User = Depends(get_current_user), 
+    current_user: models.User = Depends(get_user_for_write),
     db: Session = Depends(get_db)
 ):
     """Update user bodyweight."""
@@ -29,10 +28,10 @@ def update_bodyweight(
 
 
 @router.delete("/me/reset")
-def reset_user(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def reset_user(current_user: models.User = Depends(get_user_for_write), db: Session = Depends(get_db)):
     """Wipe all user data for testing purposes."""
-    # Because workouts cascade delete exercises, we just need to delete workouts
-    db.query(models.Workout).filter(models.Workout.user_id == current_user.id).delete()
+    for workout in current_user.workouts:
+        db.delete(workout)
     
     # Delete user upgrades
     db.query(models.UserUpgrade).filter(models.UserUpgrade.user_id == current_user.id).delete()

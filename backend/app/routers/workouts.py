@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Annotated, List
 from .. import models, schemas
 from ..database import get_db
 from ..engines.points_engine import calculate_points, get_level
 
-from ..auth import get_current_user
+from ..auth import get_current_user, get_user_for_write
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/workouts", tags=["workouts"])
 @router.post("/", response_model=schemas.WorkoutResult)
 def log_workout(
     workout: schemas.WorkoutCreate, 
-    current_user: models.User = Depends(get_current_user), 
+    current_user: models.User = Depends(get_user_for_write),
     db: Session = Depends(get_db)
 ):
     """Log a new workout with exercises and automatically award points."""
@@ -28,7 +28,7 @@ def log_workout(
     # 2. Persist exercises
     db_exercises = []
     for ex in workout.exercises:
-        db_ex = models.Exercise(workout_id=db_workout.id, **ex.dict())
+        db_ex = models.Exercise(workout_id=db_workout.id, **ex.model_dump())
         db.add(db_ex)
         db_exercises.append(db_ex)
     db.flush()
@@ -62,7 +62,7 @@ def log_workout(
 
 @router.get("/", response_model=List[schemas.WorkoutOut])
 def get_workouts(
-    limit: int = 20, 
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
     current_user: models.User = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
@@ -79,17 +79,13 @@ def get_workouts(
 @router.delete("/{workout_id}")
 def delete_workout(
     workout_id: int,
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(get_user_for_write),
     db: Session = Depends(get_db)
 ):
     """Delete a workout and reverse the points earned from it."""
-    workout = db.query(models.Workout).filter(models.Workout.id == workout_id).first()
-    
+    workout = db.query(models.Workout).filter_by(id=workout_id, user_id=current_user.id).first()
     if not workout:
         raise HTTPException(status_code=404, detail="Workout not found")
-    
-    if workout.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this workout")
 
     # Reverse points
     points_to_remove = workout.points_earned or 0

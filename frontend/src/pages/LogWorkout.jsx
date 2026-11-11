@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { logWorkout } from '../api'
-import { EXERCISE_LIBRARY } from '../utils/exerciseLibrary'
+import MuscleExercisePicker from '../components/MuscleExercisePicker'
+import { EXERCISE_LIBRARY, MUSCLE_GROUPS } from '../utils/exerciseLibrary'
 
 const LIBRARY_EXERCISES = Object.keys(EXERCISE_LIBRARY).sort()
+const newExercise = (name = '') => ({ name, weight: '', reps: '', sets: '' })
 
 function ExerciseRow({ ex, idx, onChange, onRemove }) {
   return (
-    <div className="fade-up" style={{
-      display: 'grid', gridTemplateColumns: '1fr 100px 80px 80px 40px',
-      gap: 10, alignItems: 'center',
+    <div className="fade-up workout-exercise-grid" style={{
+      alignItems: 'center',
       padding: '14px 18px', background: 'rgba(255,255,255,0.025)',
       border: '1px solid rgba(139,92,246,0.12)', borderRadius: 12,
     }}>
@@ -24,9 +25,6 @@ function ExerciseRow({ ex, idx, onChange, onRemove }) {
           onChange={e => onChange(idx, 'name', e.target.value)}
           style={{ fontSize: '0.88rem' }}
         />
-        <datalist id="exercise-list">
-          {LIBRARY_EXERCISES.map(n => <option key={n} value={n} />)}
-        </datalist>
       </div>
 
       <div>
@@ -99,15 +97,24 @@ function ResultCard({ result, onClose }) {
 
 export default function LogWorkout() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const group = MUSCLE_GROUPS.find(muscle => muscle === searchParams.get('muscle'))
+  const [lastAdded, setLastAdded] = useState('')
   const [notes, setNotes] = useState('')
-  const [exercises, setExercises] = useState([
-    { name: '', weight: '', reps: '', sets: '' },
-  ])
+  const [exercises, setExercises] = useState(() => [newExercise()])
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
 
-  const addExercise = () => setExercises(ex => [...ex, { name: '', weight: '', reps: '', sets: '' }])
+  const addExercise = () => setExercises(rows => [...rows, newExercise()])
+  const addFromLibrary = name => {
+    setExercises(rows => {
+      const emptyIndex = rows.findIndex(row => !row.name.trim())
+      if (emptyIndex === -1) return [...rows, newExercise(name)]
+      return rows.map((row, i) => i === emptyIndex ? { ...row, name } : row)
+    })
+    setLastAdded(name)
+  }
   const removeExercise = idx => setExercises(ex => ex.filter((_, i) => i !== idx))
   const updateExercise = (idx, field, val) => setExercises(ex => ex.map((e, i) => i === idx ? { ...e, [field]: val } : e))
 
@@ -139,11 +146,22 @@ export default function LogWorkout() {
       <h1 className="page-title gradient-text fade-up">Log Workout</h1>
       <p className="page-subtitle fade-up">Record your exercises to earn points and track progress.</p>
 
+      <MuscleExercisePicker
+        group={group}
+        onSelectGroup={muscle => {
+          setLastAdded('')
+          setSearchParams({ muscle }, { replace: true })
+        }}
+        onAdd={addFromLibrary}
+        lastAdded={lastAdded}
+      />
+
+      <datalist id="exercise-list">
+        {LIBRARY_EXERCISES.map(name => <option key={name} value={name} />)}
+      </datalist>
+
       {/* Column headers */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 100px 80px 80px 40px', gap: 10,
-        padding: '0 18px', marginBottom: 8
-      }}>
+      <div className="workout-exercise-grid" style={{ padding: '0 18px', marginBottom: 8 }}>
         {['Exercise', 'Weight (lbs)', 'Reps', 'Sets', ''].map((h, i) => (
           <div key={i} style={{
             fontSize: '0.72rem', fontWeight: 600, color: '#475569',

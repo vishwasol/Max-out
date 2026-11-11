@@ -14,14 +14,8 @@ export default function Login({ setAuth }) {
     setError(null)
     setLoading(true)
 
-    // OAuth2 expects form data format for token endpoint
-    const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
-
     try {
-      const res = await loginUser(formData)
-      localStorage.setItem('maxout_token', res.data.access_token)
+      await loginUser({ username, password })
       setAuth(true)
       navigate('/')
     } catch (err) {
@@ -39,9 +33,11 @@ export default function Login({ setAuth }) {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>USERNAME</label>
-            <input 
-              type="text" 
+            <label htmlFor="login-username" style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>USERNAME</label>
+            <input
+              id="login-username"
+              type="text"
+              autoComplete="username"
               className="input" 
               required
               value={username} 
@@ -50,9 +46,11 @@ export default function Login({ setAuth }) {
             />
           </div>
           <div>
-            <label style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>PASSWORD</label>
-            <input 
-              type="password" 
+            <label htmlFor="login-password" style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 6 }}>PASSWORD</label>
+            <input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
               className="input" 
               required
               value={password} 

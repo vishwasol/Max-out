@@ -60,6 +60,7 @@ export default function Progress() {
   const [isResetting, setIsResetting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   useEffect(() => {
     Promise.all([getPerformance(), getWorkouts(30), getUser()])
@@ -84,7 +85,7 @@ export default function Progress() {
         setMuscleConfidence(currentMuscleProfile.confidence)
         setMuscleTopExercises(currentMuscleProfile.topExercises)
       })
-      .catch(console.error)
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false))
   }, [])
 
@@ -93,8 +94,7 @@ export default function Progress() {
     try {
       await resetUser();
       window.location.reload();
-    } catch (e) {
-      console.error(e);
+    } catch {
       alert("Failed to reset user.");
       setIsResetting(false);
       setShowConfirm(false);
@@ -107,6 +107,8 @@ export default function Progress() {
       <span style={{ color: '#94a3b8' }}>Loading stats…</span>
     </div>
   )
+
+  if (loadFailed) return <p role="alert">Could not load your progress.</p>
 
   return (
     <div className="page">

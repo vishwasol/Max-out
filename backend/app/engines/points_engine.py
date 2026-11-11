@@ -69,7 +69,7 @@ def calculate_points(
     # ── Volume Increase Bonus ─────────────────────────────────────────────────
     current_vol = calculate_volume(exercises)
     prev_vol = get_previous_avg_volume(db, user_id, exclude_workout_id=workout_id)
-    if prev_vol > 0:
+    if prev_vol >= 0.01:
         pct_increase = ((current_vol - prev_vol) / prev_vol) * 100
         if pct_increase > 5:
             vol_bonus = int((pct_increase - 5) * 0.5)

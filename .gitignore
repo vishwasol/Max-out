@@ -18,3 +18,9 @@ frontend/dist/
 # Local env files
 .env
 *.env.local
+
+# Local database, journals, and rotated logs
+/backend/*.db
+/backend/*.db-*
+/backend/*.sqlite*
+/backend/*.log*

@@ -2,10 +2,30 @@ import { useEffect, useState } from 'react'
 import { getUpgrades, getUser, unlockUpgrade } from '../api'
 
 const EFFECT_ICONS = {
-  pr_multiplier: '🏆',
-  streak_shield: '🛡️',
-  volume_bonus: '📦',
-  weekend_multiplier: '🗓️',
+  pr_multiplier: <>
+    <path d="M6.5 3h11v5.2c0 3.7-2.5 6.3-5.5 6.3s-5.5-2.6-5.5-6.3V3Z" />
+    <path d="M6.5 5H3v2a4.5 4.5 0 0 0 4.3 4.5M17.5 5H21v2a4.5 4.5 0 0 1-4.3 4.5M12 14.5V19m-4 2h8v-2H8v2Z" />
+  </>,
+  streak_shield: <>
+    <path d="M12 2.8 20 6v4.1c0 5-3.3 8.5-8 11.1-4.7-2.6-8-6.1-8-11.1V6l8-3.2Z" />
+    <path d="m12 6 5.2 2v2.1c0 3.6-2.2 6.1-5.2 8V6Z" fill="currentColor" stroke="none" />
+  </>,
+  volume_bonus: <path d="M12 3 21 12h-5.5v9h-7v-9H3l9-9Z" fill="currentColor" strokeLinejoin="round" />,
+  weekend_multiplier: <>
+    <path d="M12 10.5c-2 3-3 6.6-3.1 10.5h3c-.3-3.9.3-7 1.9-9.6" />
+    <path d="M12 10.5C8.8 8.9 6 9.2 3 11c.5-3 4-5.1 8.2-3.6-.9-2.3-2.4-3.5-4.7-4.1 3.7-1 6.6.4 7 4 2.6-2.2 6-1.9 7.5.8-2.3-.6-4.3-.2-5.9 1.1 3.2-.2 5.4 1.6 5.7 4.3-2.4-1.9-4.6-2.7-7-2.1" />
+  </>,
+}
+
+function UpgradeIcon({ effect }) {
+  const artwork = EFFECT_ICONS[effect]
+  if (!artwork) return <span aria-hidden="true">⚡</span>
+  return (
+    <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round">
+      {artwork}
+    </svg>
+  )
 }
 
 const EFFECT_LABELS = {
@@ -17,7 +37,6 @@ const EFFECT_LABELS = {
 
 function UpgradeCard({ upgrade, userPoints, onUnlock }) {
   const canAfford = userPoints >= upgrade.cost
-  const icon = EFFECT_ICONS[upgrade.effect_type] ?? '⚡'
   const effectLabel = EFFECT_LABELS[upgrade.effect_type] ?? upgrade.effect_type
 
   return (
@@ -43,7 +62,7 @@ function UpgradeCard({ upgrade, userPoints, onUnlock }) {
       {/* Icon + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
-          width: 48, height: 48, borderRadius: 12, fontSize: '1.5rem',
+          width: 48, height: 48, flexShrink: 0, borderRadius: 12, color: '#c4b5fd',
           background: upgrade.count > 0
             ? 'rgba(16,185,129,0.1)'
             : 'rgba(139,92,246,0.1)',
@@ -51,7 +70,7 @@ function UpgradeCard({ upgrade, userPoints, onUnlock }) {
             ? '1px solid rgba(16,185,129,0.25)'
             : '1px solid rgba(139,92,246,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>{icon}</div>
+        }}><UpgradeIcon effect={upgrade.effect_type} /></div>
         <div>
           <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '1rem' }}>
             {upgrade.name}
@@ -64,7 +83,9 @@ function UpgradeCard({ upgrade, userPoints, onUnlock }) {
 
       {/* Description */}
       <p style={{ color: '#94a3b8', fontSize: '0.875rem', lineHeight: 1.55 }}>
-        {upgrade.description}
+        {upgrade.effect_type === 'streak_shield'
+          ? 'Planned to protect your streak after a missed day. This effect is currently inactive.'
+          : upgrade.description}
       </p>
 
       {/* Footer: cost + button */}
@@ -102,12 +123,17 @@ export default function Upgrades() {
   const [upgrades, setUpgrades] = useState([])
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [toast, setToast] = useState(null)
 
   const refresh = () =>
     Promise.all([getUpgrades(), getUser()])
-      .then(([u, usr]) => { setUpgrades(u.data); setUser(usr.data) })
-      .catch(console.error)
+      .then(([u, usr]) => {
+        setLoadFailed(false)
+        setUpgrades(u.data)
+        setUser(usr.data)
+      })
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false))
 
   useEffect(() => { refresh() }, [])
@@ -135,6 +161,8 @@ export default function Upgrades() {
       <span style={{ color: '#94a3b8' }}>Loading upgrades…</span>
     </div>
   )
+
+  if (loadFailed) return <p role="alert">Could not load the upgrade shop.</p>
 
   return (
     <div className="page">
