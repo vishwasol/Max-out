@@ -39,13 +39,14 @@ function PRTable({ prs }) {
   )
 }
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null
+const CustomTooltip = ({ active, payload }) => {
+  const point = payload?.[0]?.payload
+  if (!active || !point) return null
   return (
     <div style={{ background: '#12121f', border: '1px solid rgba(139,92,246,0.3)',
       borderRadius: 10, padding: '10px 14px', fontSize: '0.82rem' }}>
-      <div style={{ color: '#94a3b8', marginBottom: 4 }}>{label}</div>
-      <div style={{ color: '#fbbf24', fontWeight: 700 }}>{payload[0].value.toLocaleString()} lbs</div>
+      <div style={{ color: '#94a3b8', marginBottom: 4 }}>{point.date}</div>
+      <div style={{ color: '#fbbf24', fontWeight: 700 }}>{point.volume.toLocaleString()} lbs</div>
     </div>
   )
 }
@@ -69,6 +70,7 @@ export default function Progress() {
           const vol = workout.exercises.reduce((s, e) => s + e.weight * e.reps * e.sets, 0)
           const d = new Date(workout.date)
           return {
+            workoutId: String(workout.id),
             date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             volume: Math.round(vol),
           }
@@ -104,6 +106,8 @@ export default function Progress() {
   )
 
   if (loadFailed) return <p role="alert">Could not load your progress.</p>
+
+  const dateByWorkout = new Map(chartData.map(point => [point.workoutId, point.date]))
 
   return (
     <div className="page">
@@ -172,7 +176,8 @@ export default function Progress() {
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(139,92,246,0.08)" />
-              <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} />
+              {/* A workout ID keeps tooltip lookups unique when sessions share a date. */}
+              <XAxis dataKey="workoutId" tickFormatter={id => dateByWorkout.get(id)} tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false}
                 tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
               <Tooltip content={<CustomTooltip />} />

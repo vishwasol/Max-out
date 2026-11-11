@@ -1,12 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom'
 import MuscleMap from './MuscleMap'
 import { MUSCLE_GROUPS } from '../utils/exerciseLibrary'
 import { classifyLevel, LEVEL_COLORS, LEGEND } from '../utils/strengthVisualizerLogic'
 
 export default function StrengthVisualizerSystem({ scores = {} }) {
-  const navigate = useNavigate()
-  const exerciseLink = muscle => `/log?muscle=${muscle}`
-
   return (
     <div className="card fade-up" style={{ padding: '28px 32px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16 }}>
@@ -15,7 +11,7 @@ export default function StrengthVisualizerSystem({ scores = {} }) {
             Current Muscle Map
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: 4, maxWidth: 560 }}>
-            Strength scores are estimated from your logged lifts relative to your bodyweight. Select a muscle group to browse its exercises.
+            Strength scores are estimated from your logged lifts relative to your bodyweight.
           </p>
         </div>
         <div className="badge badge-gold" style={{ fontSize: '0.8rem', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
@@ -23,14 +19,14 @@ export default function StrengthVisualizerSystem({ scores = {} }) {
         </div>
       </div>
 
-      <MuscleMap scores={scores} onSelect={muscle => navigate(exerciseLink(muscle))} />
+      <MuscleMap scores={scores} />
 
       <div className="muscle-score-grid">
         {MUSCLE_GROUPS.map(muscle => {
           const score = scores[muscle] || 0
           const color = score ? LEVEL_COLORS[classifyLevel(score)] : '#94a3b8'
           return (
-            <Link key={muscle} to={exerciseLink(muscle)} className="muscle-score-card">
+            <div key={muscle} className="muscle-score-card">
               <div className="muscle-score-card-heading">
                 <span>{muscle}</span>
                 <strong>{score ? `${score.toFixed(1)} / 100` : '—'}</strong>
@@ -38,7 +34,7 @@ export default function StrengthVisualizerSystem({ scores = {} }) {
               <div className="muscle-score-track" aria-hidden="true">
                 <div style={{ width: `${score}%`, background: color }} />
               </div>
-            </Link>
+            </div>
           )
         })}
       </div>

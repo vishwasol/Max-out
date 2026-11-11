@@ -215,6 +215,7 @@ body {
   stroke-width: 0.45;
   stroke-linejoin: round;
 }
+.muscle-map:not(.muscle-map--interactive) svg { pointer-events: none; }
 .muscle-map--interactive polygon:hover {
   stroke: #e9d5ff;
   stroke-width: 1.1;
@@ -233,7 +234,6 @@ body {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.025);
 }
-.muscle-score-card:hover { border-color: var(--border-bright); }
 .muscle-score-card-heading {
   display: flex;
   flex-wrap: wrap;
@@ -342,7 +342,7 @@ body {
 .help-guide strong { color: var(--text-primary); }
 .help-guide ul { list-style: disc; padding-left: 1.25rem; margin: 6px 0; }
 .help-guide p + p { margin-top: 6px; }
-.help-trigger:focus-visible, .exercise-picker :focus-visible, .muscle-score-card:focus-visible, .help-guide button:focus-visible {
+.help-trigger:focus-visible, .exercise-picker :focus-visible, .help-guide button:focus-visible {
   outline: 2px solid #c4b5fd;
   outline-offset: 2px;
 }

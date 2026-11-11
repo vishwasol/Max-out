@@ -47,7 +47,7 @@ export default function HelpGuide() {
         <section>
           <h3>Review progress</h3>
           <p>The Dashboard shows your balance, level, streak, and recent sessions. Deleting a session removes its earned points from your balance. Progress shows your volume trend, best weights, and a muscle map based on your recent lifts and signup bodyweight.</p>
-          <p><strong>Strength</strong> is an in-app estimate out of 100 for exercises the app recognizes. Select a muscle on the map or its score card to open its exercise list.</p>
+          <p><strong>Strength</strong> is an in-app estimate out of 100 for exercises the app recognizes. Use the muscle map in Log Workout to browse exercises by group.</p>
         </section>
       </dialog>
     </>
