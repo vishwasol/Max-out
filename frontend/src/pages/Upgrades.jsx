@@ -84,7 +84,7 @@ function UpgradeCard({ upgrade, userPoints = 0, onUnlock }) {
       {/* Description */}
       <p style={{ color: '#94a3b8', fontSize: '0.875rem', lineHeight: 1.55 }}>
         {upgrade.effect_type === 'streak_shield'
-          ? 'Planned to protect your streak after a missed day. This effect is currently inactive.'
+          ? 'Each copy protects one missed day per streak. Two missed days in a row break the streak.'
           : upgrade.description}
       </p>
 

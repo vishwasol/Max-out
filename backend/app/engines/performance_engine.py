@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from .. import models
 
 
@@ -25,37 +25,48 @@ def calculate_volume(exercises) -> float:
     return sum(e.weight * e.reps * e.sets for e in exercises)
 
 
+def _local_date(timestamp: datetime) -> date:
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    return timestamp.astimezone().date()
+
+
 def get_streak(db: Session, user_id: int) -> int:
-    """Count consecutive workout days, keeping a streak alive through yesterday."""
-    workouts = (
-        db.query(models.Workout)
-        .filter(models.Workout.user_id == user_id)
-        .order_by(models.Workout.date.desc())
-        .all()
-    )
-    if not workouts:
-        return 0
-
+    """Count workout days, using each eligible shield to bridge one isolated missed day."""
     workout_dates = {
-        (w.date if w.date.tzinfo else w.date.replace(tzinfo=timezone.utc)).astimezone().date()
-        for w in workouts
+        _local_date(timestamp)
+        for (timestamp,) in db.query(models.Workout.date).filter_by(user_id=user_id)
     }
-    today = datetime.now().date()
-    yesterday = today - timedelta(days=1)
-
-    if today in workout_dates:
-        anchor_day = today
-    elif yesterday in workout_dates:
-        anchor_day = yesterday
-    else:
+    if not workout_dates:
         return 0
 
-    streak = 0
-    check = anchor_day
+    shield_dates = sorted(
+        _local_date(acquired_at)
+        for (acquired_at,) in (
+            db.query(models.UserUpgrade.acquired_at)
+            .join(models.Upgrade)
+            .filter(models.UserUpgrade.user_id == user_id, models.Upgrade.effect_type == "streak_shield")
+        )
+    )
 
-    while check in workout_dates:
-        streak += 1
-        check -= timedelta(days=1)
+    day = timedelta(days=1)
+    today = datetime.now().date()
+    check = today if today in workout_dates else today - day
+    streak = 0
+
+    while True:
+        if check in workout_dates:
+            streak += 1
+        elif check - day in workout_dates:
+            # A shield bought after a missed day cannot restore that gap.
+            while shield_dates and shield_dates[-1] > check:
+                shield_dates.pop()
+            if not shield_dates:
+                break
+            shield_dates.pop()
+        else:
+            break
+        check -= day
 
     return streak
 

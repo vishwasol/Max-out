@@ -10,8 +10,6 @@ UPGRADE_EFFECTS = {
     "volume_bonus": lambda base, value, ctx: int(value),
     # 2× points on weekends
     "weekend_multiplier": lambda base, value, ctx: int(base * (value - 1.0)) if ctx.get("is_weekend") else 0,
-    # Streak shield is a feature, not a points modifier
-    "streak_shield": lambda base, value, ctx: 0,
 }
 
 

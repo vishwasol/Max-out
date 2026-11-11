@@ -40,7 +40,7 @@ export default function HelpGuide() {
             <li><strong>PR Boost:</strong> Adds 10% of the workout score before upgrades when you set a PR, rounded down.</li>
             <li><strong>Volume Amplifier:</strong> Adds 5 points to each workout.</li>
             <li><strong>Weekend Warrior:</strong> Adds another copy of the workout score before upgrades on Saturday and Sunday (UTC).</li>
-            <li><strong>Streak Shield:</strong> This effect is inactive. It’s intended to protect your streak after a missed day.</li>
+            <li><strong>Streak Shield:</strong> Each copy can cover one isolated missed day per streak if you own it by the end of that day. The missed day does not add to your workout count. Two missed days in a row break the streak.</li>
           </ul>
         </section>
 
