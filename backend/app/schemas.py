@@ -1,6 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Annotated, List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # ─── Exercise ────────────────────────────────────────────────────────────────
@@ -39,6 +39,12 @@ class WorkoutOut(BaseModel):
     points_earned: int = 0
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("date")
+    @classmethod
+    def include_workout_timezone(cls, value: datetime) -> datetime:
+        # SQLite returns UTC timestamps without an offset.
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
 
 
 class WorkoutResult(BaseModel):

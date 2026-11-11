@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from .. import models
 
 
@@ -36,7 +36,10 @@ def get_streak(db: Session, user_id: int) -> int:
     if not workouts:
         return 0
 
-    workout_dates = {w.date.date() for w in workouts}
+    workout_dates = {
+        (w.date if w.date.tzinfo else w.date.replace(tzinfo=timezone.utc)).astimezone().date()
+        for w in workouts
+    }
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
 
